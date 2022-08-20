@@ -1,49 +1,95 @@
 from math import log
 
+import scipy
+import pandas as pd
+from pprint import pprint
+import numpy as np
 
 # Construct dataset
+dataset = [['youth', 'no', 'no', 'just so-so', 'no'],
+           ['youth', 'no', 'no', 'good', 'no'],
+           ['youth', 'yes', 'no', 'good', 'yes'],
+           ['youth', 'yes', 'yes', 'just so-so', 'yes'],
+           ['youth', 'no', 'no', 'just so-so', 'no'],
+           ['midlife', 'no', 'no', 'just so-so', 'no'],
+           ['midlife', 'no', 'no', 'good', 'no'],
+           ['midlife', 'yes', 'yes', 'good', 'yes'],
+           ['midlife', 'no', 'yes', 'great', 'yes'],
+           ['midlife', 'no', 'yes', 'great', 'yes'],
+           ['geriatric', 'no', 'yes', 'great', 'yes'],
+           ['geriatric', 'no', 'yes', 'good', 'yes'],
+           ['geriatric', 'yes', 'no', 'good', 'yes'],
+           ['geriatric', 'yes', 'no', 'great', 'yes'],
+           ['geriatric', 'no', 'no', 'just so-so', 'no']]
+features = ['age', 'work', 'house', 'feelings', 'credit']
+
+
 def create_dataset():
-    dataset = [['youth', 'no', 'no', 'just so-so', 'no'],
-               ['youth', 'no', 'no', 'good', 'no'],
-               ['youth', 'yes', 'no', 'good', 'yes'],
-               ['youth', 'yes', 'yes', 'just so-so', 'yes'],
-               ['youth', 'no', 'no', 'just so-so', 'no'],
-               ['midlife', 'no', 'no', 'just so-so', 'no'],
-               ['midlife', 'no', 'no', 'good', 'no'],
-               ['midlife', 'yes', 'yes', 'good', 'yes'],
-               ['midlife', 'no', 'yes', 'great', 'yes'],
-               ['midlife', 'no', 'yes', 'great', 'yes'],
-               ['geriatric', 'no', 'yes', 'great', 'yes'],
-               ['geriatric', 'no', 'yes', 'good', 'yes'],
-               ['geriatric', 'yes', 'no', 'good', 'yes'],
-               ['geriatric', 'yes', 'no', 'great', 'yes'],
-               ['geriatric', 'no', 'no', 'just so-so', 'no']]
-    features = ['age', 'work', 'house', 'credit']
     return dataset, features
 
 
-# Calculates the Gini coefficient of the current set
-def calcGini(dataset):
-    # Find the total number of samples
-    num_of_examples = len(dataset)
-    label_cnt = {}
-    # Traverse the entire sample set
-    for example in dataset:
-        # The tag value of the current sample is the last element of the list
-        current_label = example[-1]
-        # Count how many times each label appears
-        if current_label not in label_cnt.keys():
-            label_cnt[current_label] = 0
-        label_cnt[current_label] += 1
-    # After getting the number of samples of each label in the current set, calculate their p value
-    for key in label_cnt:
-        label_cnt[key] /= num_of_examples
-        label_cnt[key] = label_cnt[key] * label_cnt[key]
-    # Calculate Gini coefficient
-    Gini = 1 - sum(label_cnt.values())
-    return Gini
+def create_dataframe():
+    dataframe = pd.DataFrame(dataset, columns=features)
+    return dataframe
 
 
+# Calculates the shannon entropy coefficient of the current set
+def atomisation(dataframe):
+    all_rows = []
+    for i in range(dataframe.shape[0]):
+        row = dataframe.iloc[i, :]
+        row
+        all_rows.append(row)
+    return all_rows
+
+
+def calcShannon(variable):
+    pd_series = pd.Series(variable)
+    counts = pd_series.value_counts()
+    entropy = scipy.stats.entropy(counts)
+    return entropy
+
+
+def calc_min_shannon_dataset(dataset):
+    entropy_variable = {}
+    for line in dataset:
+        print(line)
+        entropy_variable[line] = calcShannon(dataset[line])
+    print(entropy_variable)
+    return min(entropy_variable.items(), key=lambda x: x[1])
+
+
+def fusion_dataframe(dataframe1, dataframe2):
+    dataframe_fusion = pd.concat([dataframe1, dataframe2], ignore_index=True)
+    return dataframe_fusion
+
+
+def calc_delta_impurity(dataframe1, dataframe2):
+    delta_impurity = {}
+    data = pd.concat([dataframe1, dataframe2], ignore_index=True)
+    p1 = dataframe1.shape[0] / data.shape[0]
+    p2 = dataframe2.shape[0] / data.shape[0]
+    for line in data:
+        delta_impurity[line] = (
+                calcShannon(data[line]) - p1 * calcShannon(dataframe1[line]) - p2 * calcShannon(dataframe2[line]))
+    return min(delta_impurity.items(), key=lambda x: x[1])
+
+
+def choice_fusion(all_rows: list):
+    n = len(all_rows)
+    impurities = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i, n):
+            if i != j:
+                impurities[i][j] = calc_delta_impurity(all_rows[i], all_rows[j])
+                impurities[i][j] = calc_delta_impurity(all_rows[j], all_rows[i])
+            else:
+                impurities[i][j] = None
+    index_min = np.unravel_index(np.argmin(impurities), impurities.shape)
+    print([all_rows[index_min[0]].shape, all_rows[index_min[1]].shape, impurities[index_min[0]][index_min[1]]])
+    all_rows[index_min[0]] = pd.concat([all_rows[index_min[0]], all_rows[index_min[1]]], ignore_index=True)
+    all_rows[index_min[1]].pop()
+    return all_rows
 
 
 # Extract subset
@@ -101,9 +147,9 @@ def choose_best_feature(dataset):
             prob1 = len(sub_dataset1) / float(len(dataset))
             prob2 = len(sub_dataset2) / float(len(dataset))
             # Calculate Gini coefficients for subset 1
-            Gini_of_sub_dataset1 = calcGini(sub_dataset1)
+            Gini_of_sub_dataset1 = calcShannon(sub_dataset1)
             # Calculate Gini coefficients for subset 2
-            Gini_of_sub_dataset2 = calcGini(sub_dataset2)
+            Gini_of_sub_dataset2 = calcShannon(sub_dataset2)
             # Calculate the final Gini coefficient divided by the current optimal tangent point
             Gini[value] = prob1 * Gini_of_sub_dataset1 + prob2 * Gini_of_sub_dataset2
             # Update the optimal features and optimal cut points
@@ -199,11 +245,24 @@ def classify(decision_tree, features, test_example):
 
 
 if __name__ == '__main__':
-    dataset, features = create_dataset()
-    decision_tree = create_decision_tree(dataset, features)
-    # Print the generated decision tree
-    print(decision_tree)
-    # Classify the new samples
-    features = ['age', 'work', 'house', 'credit']
-    test_example = ['midlife', 'yes', 'no', 'great']
-    print(classify(decision_tree, features, test_example))
+    dataframe = create_dataframe()
+    data = pd.DataFrame([['youth', 'yes', 'no', 'just so-so', 'no']], columns=features)
+    print(type(dataframe))
+    dataframe1 = pd.DataFrame(dataframe.iloc[5, :], columns=features)
+    print(dataframe1)
+    dataframe3 = pd.DataFrame(dataframe.iloc[1, :], columns=features)
+
+    dataframe4 = pd.concat([dataframe1, dataframe3], ignore_index=True)
+    print(dataframe4)
+    print(dataframe4.transpose())
+
+    # dataset, features = create_dataset()
+    # pprint([dataset, features])
+    # print(dataframe)
+    # decision_tree = create_decision_tree(dataset, features)
+    # # Print the generated decision tree
+    # print(decision_tree)
+    # # Classify the new samples
+    # features = ['age', 'work', 'house', 'credit']
+    # test_example = ['midlife', 'yes', 'no', 'great']
+    # print(classify(decision_tree, features, test_example))
