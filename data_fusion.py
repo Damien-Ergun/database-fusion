@@ -22,21 +22,21 @@ dataset = [['youth', 'no', 'no', 'just so-so', 'no'],
            ['geriatric', 'yes', 'no', 'great', 'yes'],
            ['geriatric', 'no', 'no', 'just so-so', 'no'],
            ['youth', 'yes', 'no', 'just so-so', 'no'],
-            ['youth', 'no', 'yes', 'just so-so', 'yes'],
-            ['youth', 'yes', 'no', 'good', 'yes'],
-            ['midlife', 'no', 'yes', 'just so-so', 'no'],
-            ['geriatric', 'yes', 'no', 'just so-so', 'yes'],
-            ['youth', 'yes', 'no', 'just so-so', 'no'],
-            ['midlife', 'no', 'yes', 'good', 'yes'],
-            ['midlife', 'yes', 'yes', 'good', 'yes'],
-            ['midlife', 'no', 'yes', 'great', 'yes'],
-            ['midlife', 'no', 'yes', 'good', 'no'],
-            ['midlife', 'yes', 'yes', 'great', 'no'],
-            ['geriatric', 'no', 'yes', 'good', 'yes'],
-            ['youth', 'yes', 'yes', 'good', 'yes'],
-            ['midlife', 'no', 'yes', 'good', 'yes'],
-            ['geriatric', 'no', 'no', 'just so-so', 'no']
-            ]
+           ['youth', 'no', 'yes', 'just so-so', 'yes'],
+           ['youth', 'yes', 'no', 'good', 'yes'],
+           ['midlife', 'no', 'yes', 'just so-so', 'no'],
+           ['geriatric', 'yes', 'no', 'just so-so', 'yes'],
+           ['youth', 'yes', 'no', 'just so-so', 'no'],
+           ['midlife', 'no', 'yes', 'good', 'yes'],
+           ['midlife', 'yes', 'yes', 'good', 'yes'],
+           ['midlife', 'no', 'yes', 'great', 'yes'],
+           ['midlife', 'no', 'yes', 'good', 'no'],
+           ['midlife', 'yes', 'yes', 'great', 'no'],
+           ['geriatric', 'no', 'yes', 'good', 'yes'],
+           ['youth', 'yes', 'yes', 'good', 'yes'],
+           ['midlife', 'no', 'yes', 'good', 'yes'],
+           ['geriatric', 'no', 'no', 'just so-so', 'no']
+           ]
 # Construct dataset
 features = ['age', 'work', 'house', 'feelings', 'credit']
 
@@ -125,6 +125,8 @@ def fusion(dataframe1, dataframe2, threshold=math.inf):
         rows = dic['rows']
         impurity.append(dic['impurity'])
     return rows, impurity
+
+
 #
 # def min_mutual_information(dataframe):
 #     mutual_information = {}
@@ -133,15 +135,10 @@ def fusion(dataframe1, dataframe2, threshold=math.inf):
 #             if not variable1.equals(variable2) :
 
 
-def information_mutual(dataframe:pandas.core.frame.DataFrame, variable:str) :
+def information_mutual(dataframe: pandas.core.frame.DataFrame, variable: str):
     column = dataframe[variable]
     dataframe = dataframe.drop(columns=variable)
-    return drv.information_mutual(dataframe,column , cartesian_product=True)
-
-
-
-
-
+    return drv.information_mutual(dataframe, column, cartesian_product=True)
 
 
 if __name__ == '__main__':
@@ -152,7 +149,7 @@ if __name__ == '__main__':
     # print(calc_delta_impurity(data,dataframe))
     # print(calc_shannon2(data['credit']))
     rows = atomisation(fused)
-    print(information_mutual(dataframe,'age'))
+    print(information_mutual(dataframe, 'age'))
     # print(fusion(dataframe, data))
     # dataset, features = create_dataset()
     # pprint([dataset, features])
