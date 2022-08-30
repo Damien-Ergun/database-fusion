@@ -3,40 +3,35 @@ from pprint import pprint
 import numpy as np
 import math
 import random
+import copy
+import re
+import inquirer
 
 import pandas.core.frame
 from pyitlib import discrete_random_variable as drv
 
-dataset = [['youth', 'no', 'no', 'just so-so', 'no'],
-           ['youth', 'no', 'no', 'good', 'no'],
-           ['youth', 'yes', 'no', 'good', 'yes'],
-           ['youth', 'yes', 'yes', 'just so-so', 'yes'],
-           ['youth', 'no', 'no', 'just so-so', 'no'],
-           ['midlife', 'no', 'no', 'just so-so', 'no'],
-           ['midlife', 'no', 'no', 'good', 'no'],
-           ['midlife', 'yes', 'yes', 'good', 'yes'],
-           ['midlife', 'no', 'yes', 'great', 'yes'],
-           ['midlife', 'no', 'yes', 'great', 'yes'],
-           ['geriatric', 'no', 'yes', 'great', 'yes'],
-           ['geriatric', 'no', 'yes', 'good', 'yes'],
-           ['geriatric', 'yes', 'no', 'good', 'yes'],
-           ['geriatric', 'yes', 'no', 'great', 'yes'],
-           ['geriatric', 'no', 'no', 'just so-so', 'no'],
-           ['youth', 'yes', 'no', 'just so-so', 'no'],
-           ['youth', 'no', 'yes', 'just so-so', 'yes'],
-           ['youth', 'yes', 'no', 'good', 'yes'],
-           ['midlife', 'no', 'yes', 'just so-so', 'no'],
-           ['geriatric', 'yes', 'no', 'just so-so', 'yes'],
-           ['youth', 'yes', 'no', 'just so-so', 'no'],
-           ['midlife', 'no', 'yes', 'good', 'yes'],
-           ['midlife', 'yes', 'yes', 'good', 'yes'],
-           ['midlife', 'no', 'yes', 'great', 'yes'],
-           ['midlife', 'no', 'yes', 'good', 'no'],
-           ['midlife', 'yes', 'yes', 'great', 'no'],
-           ['geriatric', 'no', 'yes', 'good', 'yes'],
+dataset = [['youth', 'yes', 'no', 'just so-so', 'yes'],
+           ['youth', 'no', 'yes', 'good', 'yes'],
+           ['youth', 'yes', 'no', 'just so-so', 'yes'],
            ['youth', 'yes', 'yes', 'good', 'yes'],
-           ['midlife', 'no', 'yes', 'good', 'yes'],
-           ['geriatric', 'no', 'no', 'just so-so', 'no']
+           ['youth', 'no', 'no', 'just so-so', 'yes'],
+           ['midlife', 'no', 'yes', 'just so-so', 'no'],
+           ['midlife', 'yes', 'no', 'good', 'no'],
+           ['midlife', 'yes', 'no', 'good', 'yes'],
+           ['midlife', 'no', 'no', 'great', 'no'],
+           ['midlife', 'no', 'yes', 'great', 'yes'],
+           ['geriatric', 'no', 'yes', 'great', 'no'], 
+        ['midlife', 'no', 'yes', 'just so-so', 'no'],
+           ['midlife', 'no', 'yes', 'great', 'no'],
+           ['youth', 'no', 'yes', 'just so-so', 'no'],
+           ['youth', 'yes', 'no', 'good', 'yes'],
+           ['youth', 'no', 'yes', 'just so-so', 'no'],
+           ['midlife', 'no', 'yes', 'just so-so', 'no'],
+           ['midlife', 'no', 'no', 'good', 'yes'],
+           ['midlife', 'no', 'yes', 'just so-so', 'no'],
+           ['midlife', 'no', 'no', 'great', 'yes'],
+           ['midlife', 'no', 'yes', 'great', 'no'],
+           ['geriatric', 'yes', 'no', 'good', 'yes']
            ]
 # Construct dataset
 features = ['age', 'work', 'house', 'feelings', 'credit']
@@ -132,21 +127,55 @@ def choice_fusion(all_rows: list):
 def fusion(dataframe1: pandas.core.frame.DataFrame, dataframe2: pandas.core.frame.DataFrame, k=10, threshold=math.inf):
     fused = fusion_dataframe(dataframe1, dataframe2)
     rows = atomisation(fused)
+    final = copy.deepcopy(rows)
     impurity = []
-    mean_entropy = []
+    index = 0
+    all = []
     while len(rows) > 1:
         print('il reste ', len(rows), ' données à fusionner')
         dic = choice_fusion(rows)
-        print(dic)
         rows = dic['rows']
         impurity.append(dic['impurity'])
-        mean_entropy.append([calc_mean_shannon_dataset(dataframe) for dataframe in rows])
-        print(mean_entropy[-1])
-        if impurity[-1] != 0:
-            answer = input('on continue ? [y/n]')
-            if answer == 'n':
-                break
-    return rows, impurity
+        all.append(dic)
+    a = local_min(impurity)
+    information_str = display_information(all, a)
+    # possible_choices = []
+    # questions = [
+    #     inquirer.List('size',
+    #                   message="quelle fusion voulez vous ?",
+    #                   choices=possible_choices,
+    #                   ),
+    # ]
+    # answers = inquirer.prompt(questions)
+    print(information_str)
+    # for count, value in enumerate(a[1]):
+    #     final = all[value]
+    #     print(all[value])
+    #     if all[value]['impurity'] != 0:
+    #         answer = input('voulez vous cette fusion ? [y/n]')
+    #         if answer == 'y':
+    #             break
+
+
+
+def display_information(all, a, dict=False) :
+    information = {}
+    information_str = {}
+    for count, value in enumerate(a[1]):
+        information[f'stage {value}'] = {}
+        information_str[f'stage {value}'] = {}
+        information[f'stage {value}']['impurity'] = a[0][count]
+        information_str[f'stage {value}']['impurity'] = f'impurity : {a[0][count]}'
+        information_str[f'stage {value}']['tables'] = ''
+        for i, data in enumerate(all[value]['rows']):
+            print (i)
+            information[f'stage {value}'][f'table {i+1}'] = {}
+            information[f'stage {value}'][f'table {i+1}']['taille'] = data.shape[-1]
+            information_str[f'stage {value}']['tables'] += f'info dataframe {i} \n size : {data.shape[-1]} \n average entropy : {calc_mean_shannon_dataset(data)} '
+            information[f'stage {value}'][f'table {i+1}']['entropie moyenne'] = calc_mean_shannon_dataset(data)
+    if dict:
+        return information, information_str
+    return information_str
 
 
 def two_by_two(rows, seed):
@@ -172,18 +201,18 @@ def two_by_two(rows, seed):
 #             if not variable1.equals(variable2) :
 
 
-
-
 def local_min(ys):
-    return [y for i, y in enumerate(ys)
-            if ((i == 0) or (ys[i - 1] >= y))
-            and ((i == len(ys) - 1) or (y < ys[i + 1]))]
+    return [[y for i, y in enumerate(ys)
+             if ((i == 0) or (ys[i - 1] >= y))
+             and ((i == len(ys) - 1) or (y < ys[i + 1]))], [i for i, y in enumerate(ys)
+                                                            if ((i == 0) or (ys[i - 1] >= y))
+                                                            and ((i == len(ys) - 1) or (y < ys[i + 1]))]]
 
 
 if __name__ == '__main__':
     dataframe = create_dataframe()
     dataframe['test'] = [i for i in range(dataframe.shape[0])]
-    data = pd.DataFrame([['youth', 'yes', 'no', 'just so-so', 'no']], columns=features)
+    data = pd.DataFrame([['youth', 'yes', 'no', 'good', 'no']], columns=features)
     data['test'] = [-1]
     fused = fusion_dataframe(data, dataframe)
     fused['test'] = [i for i in range(fused.shape[0])]
