@@ -20,8 +20,8 @@ dataset = [['youth', 'yes', 'no', 'just so-so', 'yes'],
            ['midlife', 'yes', 'no', 'good', 'yes'],
            ['midlife', 'no', 'no', 'great', 'no'],
            ['midlife', 'no', 'yes', 'great', 'yes'],
-           ['geriatric', 'no', 'yes', 'great', 'no'], 
-        ['midlife', 'no', 'yes', 'just so-so', 'no'],
+           ['geriatric', 'no', 'yes', 'great', 'no'],
+           ['midlife', 'no', 'yes', 'just so-so', 'no'],
            ['midlife', 'no', 'yes', 'great', 'no'],
            ['youth', 'no', 'yes', 'just so-so', 'no'],
            ['youth', 'yes', 'no', 'good', 'yes'],
@@ -127,38 +127,34 @@ def choice_fusion(all_rows: list):
 def fusion(dataframe1: pandas.core.frame.DataFrame, dataframe2: pandas.core.frame.DataFrame, k=10, threshold=math.inf):
     fused = fusion_dataframe(dataframe1, dataframe2)
     rows = atomisation(fused)
-    final = copy.deepcopy(rows)
     impurity = []
     index = 0
     all = []
     while len(rows) > 1:
         print('il reste ', len(rows), ' données à fusionner')
         dic = choice_fusion(rows)
+        add = copy.deepcopy(dic)
+        all.append(add)
         rows = dic['rows']
         impurity.append(dic['impurity'])
-        all.append(dic)
+
     a = local_min(impurity)
     information_str = display_information(all, a)
-    # possible_choices = []
-    # questions = [
-    #     inquirer.List('size',
-    #                   message="quelle fusion voulez vous ?",
-    #                   choices=possible_choices,
-    #                   ),
-    # ]
-    # answers = inquirer.prompt(questions)
-    print(information_str)
-    # for count, value in enumerate(a[1]):
-    #     final = all[value]
-    #     print(all[value])
-    #     if all[value]['impurity'] != 0:
-    #         answer = input('voulez vous cette fusion ? [y/n]')
-    #         if answer == 'y':
-    #             break
+    pprint(information_str)
+    possible_choices = [f'{key}' for key, value in information_str.items()]
+
+    questions = [
+        inquirer.List('size',
+                      message="quelle fusion voulez vous ?",
+                      choices=possible_choices,
+                      ),
+    ]
+    answers = inquirer.prompt(questions)
+    choice = int(answers[6])
+    return all[choice]
 
 
-
-def display_information(all, a, dict=False) :
+def display_information(all, a, dict=False):
     information = {}
     information_str = {}
     for count, value in enumerate(a[1]):
@@ -166,16 +162,20 @@ def display_information(all, a, dict=False) :
         information_str[f'stage {value}'] = {}
         information[f'stage {value}']['impurity'] = a[0][count]
         information_str[f'stage {value}']['impurity'] = f'impurity : {a[0][count]}'
-        information_str[f'stage {value}']['tables'] = ''
+        information_str[f'stage {value}']['tables'] = {}
+        information[f'stage {value}']['tables'] = {}
+        information[f'stage {value}']['tables']['number of tables'] = len(all[value]['rows'])
+        information_str[f'stage {value}']['tables']['number of tables'] = f"number of tables : {len(all[value]['rows'])}"
         for i, data in enumerate(all[value]['rows']):
-            print (i)
-            information[f'stage {value}'][f'table {i+1}'] = {}
-            information[f'stage {value}'][f'table {i+1}']['taille'] = data.shape[-1]
-            information_str[f'stage {value}']['tables'] += f'info dataframe {i} \n size : {data.shape[-1]} \n average entropy : {calc_mean_shannon_dataset(data)} '
-            information[f'stage {value}'][f'table {i+1}']['entropie moyenne'] = calc_mean_shannon_dataset(data)
+            information[f'stage {value}']['tables'][f'table {i}'] = {}
+            information_str[f'stage {value}']['tables'][f'table {i}'] = f'info dataframe {i} \n size : {data.shape[0]} \n average entropy : {calc_mean_shannon_dataset(data)} '
+            information[f'stage {value}']['tables'][f'table {i}']['entropie moyenne'] = calc_mean_shannon_dataset(data)
+            information[f'stage {value}']['tables'][f'table {i}']['taille'] = data.shape
+
     if dict:
         return information, information_str
     return information_str
+
 
 
 def two_by_two(rows, seed):
